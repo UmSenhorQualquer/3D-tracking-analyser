@@ -23,7 +23,7 @@ class ChooseColumnsWindow(BaseWidget):
 		self._separator.changed = self.__refreshPreview
 		self._filename.changed = self.__refreshPreview
 
-		self._filename.value = '/home/ricardo/Downloads/2012.12.01_13.48_3D_POSITIONS_version_03.06.2015.csv'
+		#self._filename.value = '/home/ricardo/Downloads/2012.12.01_13.48_3D_POSITIONS_version_03.06.2015.csv'
 
 		
 	@property
@@ -63,7 +63,7 @@ class ChooseColumnsWindow(BaseWidget):
 
 	def __refreshPreview(self):
 		if self._filename.value!=None and self._filename.value!='':
-			with open(self._filename.value) as csvfile:
+			with open(self._filename.value, 'U') as csvfile:
 				spamreader = csv.reader(csvfile, delimiter=self._separator.value)
 				self._filePreview.value = []
 				self._filePreview.horizontalHeaders = ["0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16",]

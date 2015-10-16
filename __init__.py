@@ -1,6 +1,5 @@
 from pyforms import BaseWidget
 from pyforms.Controls import ControlText
-from pyforms.Controls import ControlTextArea
 from pyforms.Controls import ControlProgress
 from pyforms.Controls import ControlSlider
 from pyforms.Controls import ControlCombo

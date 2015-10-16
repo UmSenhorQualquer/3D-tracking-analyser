@@ -26,7 +26,7 @@ def write_dicom(pixel_array,filename):
 	filename: string name for the output file.
 	"""
 
-	## This code block was taken from the output of a MATLAB secondary
+	## This code block was tak en from the output of a MATLAB secondary
 	## capture.  I do not know what the long dotted UIDs mean, but
 	## this code works.
 	file_meta = Dataset()

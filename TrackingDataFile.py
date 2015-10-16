@@ -21,7 +21,7 @@ class TrackingDataFile:
 		if filename!=None and filename!='': self.importCSV(filename)
 
 	def importCSV(self, filename):
-		with open(filename, 'rb') as csvfile:
+		with open(filename, 'U') as csvfile:
 			spamreader = csv.reader(csvfile, delimiter=self._separator, quotechar='"')
 			data = []
 			
