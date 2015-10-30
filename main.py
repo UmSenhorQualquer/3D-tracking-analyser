@@ -70,14 +70,25 @@ class TrackingDensity(BaseWidget):
 		self.SCALE = 10.0
 
 
-		self._visvis   		= ControlVisVisVolume("Player")
-		self._progress 		= ControlProgress('Generating cube')
-		self._sphere 		= ControlText('Position filter (x,y,z,radius)')
-		self._colorMap 		= ControlCombo('Color map')
-		self._boundings 	= ControlBoundingSlider('Ranges', horizontal = True)
-		self._calcButton 	= ControlButton('Calculate map')
+		self._visvis   			= ControlVisVisVolume("Volume")
+		self._graph   			= ControlVisVis("Graph")
+		self._progress 			= ControlProgress('Generating cube')
+		self._sphere 			= ControlText('Position filter (x,y,z,radius)')
+		self._colorMap 			= ControlCombo('Color map')
+		self._boundings 		= ControlBoundingSlider('Ranges', horizontal = True)
+		self._calcButton 		= ControlButton('Calculate map')
+		self._posOverTimeButton = ControlButton('Calculate position over time')
+		self._velOverTimeButton = ControlButton('Velocity over time')
+		self._accOverTimeButton = ControlButton('Accelaration over time')
 
-		self._formset = [('_colorMap','_sphere','_calcButton'),'_boundings','_visvis','_progress']
+		self._formset = [
+			'_boundings',
+			{
+				'Map': [ ('_colorMap','_sphere','_calcButton'),'_visvis'],
+			 	'Graphs': [('_posOverTimeButton','_velOverTimeButton', '_accOverTimeButton'),'_graph'],
+			},
+			'_progress'
+		]
 
 		self._colorMap.addItem( 'Bone', vv.CM_BONE )
 		self._colorMap.addItem( 'Cool', vv.CM_COOL )
@@ -108,6 +119,9 @@ class TrackingDensity(BaseWidget):
 		self._fileSetupWindow = ChooseColumnsWindow()
 		self._fileSetupWindow.loadFileEvent = self.__load_tracking_file
 		self._calcButton.value = self.__calculateMap
+		self._posOverTimeButton.value = self.__calculate_2d_positions_overtime
+		self._velOverTimeButton.value = self.__velocity_overtime
+		self._accOverTimeButton.value = self.__accelaration_overtime
 
 		self._colorMap.value = vv.CM_HSV
 
@@ -137,7 +151,61 @@ class TrackingDensity(BaseWidget):
 
 			
 			self.__calculateMap()
+
+
+	def __accelaration_overtime(self):
+		lower = 0 if self._boundings.value[0]<0 else self._boundings.value[0]
+		higher = len(self._data) if self._boundings.value[1]>(len(self._data)+1) else self._boundings.value[1]
+
+		self._progress.min = lower
+		self._progress.max = higher
+
+		accelarations = []
+		for i in range(int(lower), int(higher)-2 ):
+			self._progress.value = i
+			if self._data[i]!=None:
+				pos0 = self._data[i].position
+				pos1 = self._data[i+1].position
+				pos2 = self._data[i+2].position
+				vel0 = lin_dist3d(pos1, pos0)
+				vel1 = lin_dist3d(pos2, pos1)
+
+				accelarations.append( (i, vel1-vel0) )
+		
+		self._graph.value = [accelarations]
 			
+	def __velocity_overtime(self):
+		lower = 0 if self._boundings.value[0]<0 else self._boundings.value[0]
+		higher = len(self._data) if self._boundings.value[1]>(len(self._data)+1) else self._boundings.value[1]
+
+		self._progress.min = lower
+		self._progress.max = higher
+
+		velocities = []
+		for i in range( int(lower), int(higher)-1 ):
+			self._progress.value = i
+			if self._data[i]!=None:
+				pos0 = self._data[i].position
+				pos1 = self._data[i+1].position
+				velocities.append( (i, lin_dist3d(pos1, pos0)) )
+		
+		self._graph.value = [velocities]
+
+	def __calculate_2d_positions_overtime(self):
+		lower = 0 if self._boundings.value[0]<0 else self._boundings.value[0]
+		higher = len(self._data) if self._boundings.value[1]>(len(self._data)+1) else self._boundings.value[1]
+
+		self._progress.min = lower
+		self._progress.max = higher
+
+		positions = []
+		for i in range(int(lower), int(higher) ):
+			self._progress.value = i
+			if self._data[i]!=None:
+				x,y,z = self._data[i].position
+				positions.append( (x,y,i) )
+		
+		self._graph.value = [positions]
 
 	def __calculateMap(self):
 
