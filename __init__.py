@@ -5,6 +5,7 @@ from pyforms.Controls import ControlSlider
 from pyforms.Controls import ControlCombo
 from pyforms.Controls import ControlButton
 from pyforms.Controls import ControlImage
+from pyforms.Controls import ControlMatplotlib
 from pyforms.Controls import ControlVisVisVolume
 from pyforms.Controls import ControlFile
 from pyforms.Controls import ControlVisVis

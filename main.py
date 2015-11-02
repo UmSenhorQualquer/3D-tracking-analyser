@@ -80,12 +80,15 @@ class TrackingDensity(BaseWidget):
 		self._posOverTimeButton = ControlButton('Calculate position over time')
 		self._velOverTimeButton = ControlButton('Velocity over time')
 		self._accOverTimeButton = ControlButton('Accelaration over time')
-
+		self._velocityBnds		= ControlBoundingSlider('Velocities thresh', horizontal = True)
+		
 		self._formset = [
 			'_boundings',
 			{
-				'Map': [ ('_colorMap','_sphere','_calcButton'),'_visvis'],
-			 	'Graphs': [('_posOverTimeButton','_velOverTimeButton', '_accOverTimeButton'),'_graph'],
+				'Map': [ ('_colorMap','_sphere','_calcButton'),'_velocityBnds','_visvis'],
+				'Graphs': [ 
+					('_posOverTimeButton','_velOverTimeButton', '_accOverTimeButton'),
+					'_graph'],
 			},
 			'_progress'
 		]
@@ -149,6 +152,9 @@ class TrackingDensity(BaseWidget):
 			self._boundings.max = len(self._data)+len(self._data)/100.0
 			self._boundings.value = [0, len(self._data)]
 
+			self._velocityBnds.max = 100000
+			self._velocityBnds.value = 0,100000
+
 			
 			self.__calculateMap()
 
@@ -181,15 +187,50 @@ class TrackingDensity(BaseWidget):
 		self._progress.min = lower
 		self._progress.max = higher
 
+		xs = []
+		ys = []
+		zs = []
+		cs = []
 		velocities = []
+
 		for i in range( int(lower), int(higher)-1 ):
 			self._progress.value = i
 			if self._data[i]!=None:
 				pos0 = self._data[i].position
 				pos1 = self._data[i+1].position
+				#velocities.append( (i, lin_dist3d(pos1, pos0)) )
 				velocities.append( (i, lin_dist3d(pos1, pos0)) )
+
+				xs.append(pos1[0])
+				ys.append(pos1[1])
+				#zs.append(pos1[2])
+				zs.append(i)
+				cs.append(lin_dist3d(pos1, pos0))
+
+		self._velocityBnds.min = int(round(np.min( np.array(cs) )*1000))
+		self._velocityBnds.max = int(round(np.max( np.array(cs) )*1000))
+		self._velocityBnds.value = self._velocityBnds.min, self._velocityBnds.max
 		
 		self._graph.value = [velocities]
+
+		"""
+		self._mpl.axes = self._mpl.fig.add_subplot(111, projection='3d')
+		self._mpl.axes.clear(); 
+		pts = self._mpl.axes.scatter(xs, ys, zs, c=cs)
+		self._mpl.fig.colorbar(pts
+		"""
+		
+		"""
+		from mpl_toolkits.mplot3d import Axes3D
+		import matplotlib.pyplot as plt
+		fig = plt.figure()
+		ax 	= fig.gca(projection='3d')
+		pts = ax.scatter(xs, ys, zs, c=cs)
+		fig.colorbar(pts )
+		ax.set_aspect('equal', 'datalim')
+		plt.show()"""
+
+
 
 	def __calculate_2d_positions_overtime(self):
 		lower = 0 if self._boundings.value[0]<0 else self._boundings.value[0]
@@ -224,11 +265,13 @@ class TrackingDensity(BaseWidget):
 		except:
 			sphere = None
 
+		min_vel, max_vel = self._velocityBnds.value
+
 		img = np.zeros( (xDiff,yDiff,zDiff), dtype=np.float32)
-		for i in range(int(lower), int(higher) ):
+		for i in range(int(lower), int(higher)-1 ):
 			self._progress.value = i
 			if self._data[i]!=None:
-				position = self._data[i].position 
+				position = self._data[i].position
 			
 				x, y, z = position
 				x += abs(self._data.xRange[0])
@@ -237,6 +280,12 @@ class TrackingDensity(BaseWidget):
 				x = int(round(x*self.SCALE))
 				y = int(round(y*self.SCALE))
 				z = int(round(z*self.SCALE))
+
+				pos0 = self._data[i].position
+				pos1 = self._data[i+1].position
+				vel = lin_dist3d(pos1, pos0)*1000.0
+
+				if not(min_vel<=vel<=max_vel): continue
 
 				if sphere!=None and lin_dist3d( (x,y,z), (sphere_x, sphere_y, sphere_z) )>sphere_r:
 					continue
@@ -267,6 +316,7 @@ class TrackingDensity(BaseWidget):
 		except:
 			sphere = None
 
+		min_vel, max_vel = self._velocityBnds.value
 
 		with open(filename, 'wb') as csvfile:
 			spamwriter = csv.writer(csvfile, delimiter=',')
@@ -285,7 +335,8 @@ class TrackingDensity(BaseWidget):
 					y = int(round(y*self.SCALE))
 					z = int(round(z*self.SCALE))
 
-					if sphere!=None and lin_dist3d( (x,y,z), (sphere_x, sphere_y, sphere_z) )<=sphere_r:
+					if 	not(min_vel<=vel<=max_vel) and \
+						sphere!=None and lin_dist3d( (x,y,z), (sphere_x, sphere_y, sphere_z) )<=sphere_r:
 						spamwriter.writerow(self._data[i].row)
 					
 					
