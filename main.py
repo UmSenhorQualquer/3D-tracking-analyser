@@ -81,11 +81,17 @@ class TrackingDensity(BaseWidget):
 		self._velOverTimeButton = ControlButton('Velocity over time')
 		self._accOverTimeButton = ControlButton('Accelaration over time')
 		self._velocityBnds		= ControlBoundingSlider('Velocities thresh', horizontal = True)
+
+		self._minVel = ControlText('Min vel.')
+		self._maxVel = ControlText('Max vel.')
 		
 		self._formset = [
 			'_boundings',
 			{
-				'Map': [ ('_colorMap','_sphere','_calcButton'),'_velocityBnds','_visvis'],
+				'Map': [ ('_colorMap','_sphere','_calcButton'),
+				('_minVel', ' ','_maxVel'), 
+				'_velocityBnds',
+				'_visvis'],
 				'Graphs': [ 
 					('_posOverTimeButton','_velOverTimeButton', '_accOverTimeButton'),
 					'_graph'],
@@ -126,9 +132,28 @@ class TrackingDensity(BaseWidget):
 		self._velOverTimeButton.value = self.__velocity_overtime
 		self._accOverTimeButton.value = self.__accelaration_overtime
 
+		self._minVel.changed = self.__minVelChanged
+		self._maxVel.changed = self.__maxVelChanged
+
 		self._colorMap.value = vv.CM_HSV
 
+	def __minVelChanged(self):
+		v = eval(self._minVel.value)
+		self._velocityBnds.min = v
+		values = list(self._velocityBnds.value)
+
+		if values[0]<v: values[0] = v
+		self._velocityBnds.value = values
+
+	def __maxVelChanged(self):
+		v = eval(self._maxVel.value)
+
+		self._velocityBnds.max = v
+		values = list(self._velocityBnds.value)
 		
+		if values[1]>v: values[1] = v
+		self._velocityBnds.value = values
+
 	def __updateColorMap(self):
 		self._visvis.colorMap = self._colorMap.value
 
@@ -152,11 +177,15 @@ class TrackingDensity(BaseWidget):
 			self._boundings.max = len(self._data)+len(self._data)/100.0
 			self._boundings.value = [0, len(self._data)]
 
-			self._velocityBnds.max = 100000
+			self._minVel.value = str(0)
+			self._maxVel.value = str(100000)
 			self._velocityBnds.value = 0,100000
 
 			
 			self.__calculateMap()
+
+
+
 
 
 	def __accelaration_overtime(self):
@@ -207,8 +236,8 @@ class TrackingDensity(BaseWidget):
 				zs.append(i)
 				cs.append(lin_dist3d(pos1, pos0))
 
-		self._velocityBnds.min = int(round(np.min( np.array(cs) )*1000))
-		self._velocityBnds.max = int(round(np.max( np.array(cs) )*1000))
+		self._minVel.value = str( int(round(np.min( np.array(cs) )*1000)) )
+		self._maxVel.value = str(int(round(np.max( np.array(cs) )*1000)))
 		self._velocityBnds.value = self._velocityBnds.min, self._velocityBnds.max
 		
 		self._graph.value = [velocities]
