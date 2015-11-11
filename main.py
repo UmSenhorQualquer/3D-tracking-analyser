@@ -351,7 +351,7 @@ class TrackingDensity(BaseWidget):
 			spamwriter = csv.writer(csvfile, delimiter=',')
 	
 	
-			for i in range(int(lower), int(higher) ):
+			for i in range(int(lower), int(higher)-1 ):
 				self._progress.value = i
 				if self._data[i]!=None:
 					position = self._data[i].position 
@@ -364,8 +364,15 @@ class TrackingDensity(BaseWidget):
 					y = int(round(y*self.SCALE))
 					z = int(round(z*self.SCALE))
 
-					if 	not(min_vel<=vel<=max_vel) and \
-						sphere!=None and lin_dist3d( (x,y,z), (sphere_x, sphere_y, sphere_z) )<=sphere_r:
+					pos0 = self._data[i].position
+					pos1 = self._data[i+1].position
+					vel = lin_dist3d(pos1, pos0)*1000.0
+
+					if 	(min_vel<=vel<=max_vel) and \
+						(
+							((sphere!=None and lin_dist3d( (x,y,z), (sphere_x, sphere_y, sphere_z) )<=sphere_r)) or \
+							sphere==None
+						):
 						spamwriter.writerow(self._data[i].row)
 					
 					
