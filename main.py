@@ -81,6 +81,8 @@ class TrackingDensity(BaseWidget):
 		self._velOverTimeButton = ControlButton('Velocity over time')
 		self._accOverTimeButton = ControlButton('Accelaration over time')
 		self._velocityBnds		= ControlBoundingSlider('Velocities thresh', horizontal = True)
+		self._colorsBnds		= ControlBoundingSlider('Colors thresh', horizontal = True)
+		self._refreshColorBnds  = ControlButton('Refresh colors')
 
 		self._minVel = ControlText('Min vel.')
 		self._maxVel = ControlText('Max vel.')
@@ -88,10 +90,13 @@ class TrackingDensity(BaseWidget):
 		self._formset = [
 			'_boundings',
 			{
-				'Map': [ ('_colorMap','_sphere','_calcButton'),
-				('_minVel', ' ','_maxVel'), 
-				'_velocityBnds',
-				'_visvis'],
+				'Map': [ 
+					('_colorMap','_sphere','_calcButton'),
+					('_minVel', ' ','_maxVel'), 
+					'_velocityBnds',
+					('_colorsBnds','_refreshColorBnds'),
+					'_visvis'
+				],
 				'Graphs': [ 
 					('_posOverTimeButton','_velOverTimeButton', '_accOverTimeButton'),
 					'_graph'],
@@ -131,11 +136,20 @@ class TrackingDensity(BaseWidget):
 		self._posOverTimeButton.value = self.__calculate_2d_positions_overtime
 		self._velOverTimeButton.value = self.__velocity_overtime
 		self._accOverTimeButton.value = self.__accelaration_overtime
+		self._refreshColorBnds.value = self.__refreshColorsEvent
 
 		self._minVel.changed = self.__minVelChanged
 		self._maxVel.changed = self.__maxVelChanged
 
 		self._colorMap.value = vv.CM_HSV
+
+	def __refreshColorsEvent(self):
+		color_min, color_max = self._colorsBnds.value
+
+		img = self._mapImg.copy()
+		img[img<color_min]=color_min
+		img[img>color_max]=color_max
+		self._visvis.value = img
 
 	def __minVelChanged(self):
 		v = eval(self._minVel.value)
@@ -322,7 +336,13 @@ class TrackingDensity(BaseWidget):
 				img[x-2:x+2,y-2:y+2,z-2:z+2] += 1
 		
 		self._visvis.value = img
-		
+		self._mapImg = img
+
+		color_min = np.min(img)
+		color_max = np.max(img)
+		self._colorsBnds.min = color_min - (color_max-color_min)*0.1
+		self._colorsBnds.max = color_max + (color_max-color_min)*0.1
+		self._colorsBnds.value = np.min(img), np.max(img)
 
 	def __export_tracking_file(self):
 
