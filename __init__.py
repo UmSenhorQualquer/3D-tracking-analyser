@@ -1,4 +1,5 @@
 from pyforms import BaseWidget
+from pyforms.dialogs  import CsvParserDialog
 from pyforms.Controls import ControlText
 from pyforms.Controls import ControlProgress
 from pyforms.Controls import ControlSlider
@@ -14,7 +15,10 @@ from pyforms.Controls import ControlCheckBox
 from pyforms.Controls import ControlList
 from pyforms.Controls import ControlLabel
 from pyforms.Controls import ControlNumber
+from pyforms.Controls import ControlTree
+from pyforms.Controls import ControlMdiArea
 from pyforms.Controls import ControlBoundingSlider
+from pyforms.Controls import ControlCheckBoxList
 
 from pyforms.Controls import ControlDockWidget
 import pyforms as app
