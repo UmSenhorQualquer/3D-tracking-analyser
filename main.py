@@ -77,12 +77,13 @@ class TrackingDensity(BaseWidget):
 		self._colorMap 			= ControlCombo('Color map')
 		self._boundings 		= ControlBoundingSlider('Ranges', horizontal = True)
 		self._calcButton 		= ControlButton('Calculate map')
-		self._posOverTimeButton = ControlButton('Calculate position over time')
+		self._posOverTimeButton = ControlButton('Combine variables')
 		self._velOverTimeButton = ControlButton('Velocity over time')
-		self._accOverTimeButton = ControlButton('Accelaration over time')
+		self._accOverTimeButton = ControlButton('Acceleration over time')
 		self._velocityBnds		= ControlBoundingSlider('Velocities thresh', horizontal = True)
 		self._colorsBnds		= ControlBoundingSlider('Colors thresh', horizontal = True)
 		self._refreshColorBnds  = ControlButton('Refresh colors')
+		self._varsList			= ControlCheckBoxList('Variables')
 
 		self._minVel = ControlText('Min vel.')
 		self._maxVel = ControlText('Max vel.')
@@ -97,12 +98,21 @@ class TrackingDensity(BaseWidget):
 					('_colorsBnds','_refreshColorBnds'),
 					'_visvis'
 				],
+				'Variables': ['_varsList',],
 				'Graphs': [ 
-					('_posOverTimeButton','_velOverTimeButton', '_accOverTimeButton'),
+					('_posOverTimeButton', ' '),
 					'_graph'],
 			},
 			'_progress'
 		]
+
+		self._varsList += ('Frames',True)
+		self._varsList += ('X',True)
+		self._varsList += ('Y',True)
+		self._varsList += ('Z',False)
+		self._varsList += ('Velocity',False)
+		self._varsList += ('Acceleration',False)
+		
 
 		self._colorMap.addItem( 'Bone', vv.CM_BONE )
 		self._colorMap.addItem( 'Cool', vv.CM_COOL )
@@ -133,15 +143,44 @@ class TrackingDensity(BaseWidget):
 		self._fileSetupWindow = ChooseColumnsWindow()
 		self._fileSetupWindow.loadFileEvent = self.__load_tracking_file
 		self._calcButton.value = self.__calculateMap
-		self._posOverTimeButton.value = self.__calculate_2d_positions_overtime
+		#self._posOverTimeButton.value = self.__calculate_2d_positions_overtime
+		self._posOverTimeButton.value = self.__calculate_graph
 		self._velOverTimeButton.value = self.__velocity_overtime
-		self._accOverTimeButton.value = self.__accelaration_overtime
+		self._accOverTimeButton.value = self.__acceleration_overtime
 		self._refreshColorBnds.value = self.__refreshColorsEvent
 
 		self._minVel.changed = self.__minVelChanged
 		self._maxVel.changed = self.__maxVelChanged
 
 		self._colorMap.value = vv.CM_HSV
+
+	def __calculate_graph(self):
+		lower = 0 if self._boundings.value[0]<0 else self._boundings.value[0]
+		higher = len(self._data) if self._boundings.value[1]>(len(self._data)+1) else self._boundings.value[1]
+
+		self._progress.min = lower
+		self._progress.max = higher
+
+		values = []
+		variables = self._varsList.value
+		for i in range(int(lower), int(higher)-2 ):
+			self._progress.value = i
+			if self._data[i]!=None:
+				val = []
+				pos = self._data[i].position
+					
+				if 'Frames' in variables: val.append(i)
+				if 'X' in variables: val.append(pos[0])
+				if 'Y' in variables: val.append(pos[1])
+				if 'Z' in variables: val.append(pos[2])
+				if 'Velocity' in variables: val.append(self._velocities[i])
+				if 'Acceleration' in variables: val.append(self._accelerations[i])
+
+				if len(val)>3: val = val[:3]
+
+				values.append( val )
+		
+		self._graph.value = [values]
 
 	def __refreshColorsEvent(self):
 		color_min, color_max = self._colorsBnds.value
@@ -187,29 +226,53 @@ class TrackingDensity(BaseWidget):
 		
 			self._fileSetupWindow.close()
 			
-			self._boundings.min = -len(self._data)/100.0
-			self._boundings.max = len(self._data)+len(self._data)/100.0
-			self._boundings.value = [0, len(self._data)]
+			self._boundings.min 	= -len(self._data)/100.0
+			self._boundings.max 	= len(self._data)+len(self._data)/100.0
+			self._boundings.value 	= [0, len(self._data)]
 
-			self._minVel.value = str(0)
-			self._maxVel.value = str(100000)
-			self._velocityBnds.value = 0,100000
+			self._minVel.value 			= str(0)
+			self._maxVel.value 			= str(100000)
+			self._velocityBnds.value 	= 0,100000
 
 			
+			self._progress.min = 0
+			self._progress.max = len(self._data)
+			
+			self._velocities	= []
+			self._accelerations 	= []
+			lastVelocity 		= None
+			for i in range(len(self._data)-1):
+				self._progress.value = i
+				if self._data[i]!=None:
+					pos0 = self._data[i].position
+					pos1 = self._data[i+1].position
+
+					velocity = lin_dist3d(pos1, pos0)
+					self._velocities.append( velocity )
+
+					if lastVelocity!=None:  self._accelerations.append( velocity-lastVelocity )
+					lastVelocity = velocity
+
+
+			self._minVel.value = str(int(round(np.min( np.array(self._velocities) )*1000)) )
+			self._maxVel.value = str(int(round(np.max( np.array(self._velocities) )*1000)))
+			self._velocityBnds.value = self._velocityBnds.min, self._velocityBnds.max
+		
+
 			self.__calculateMap()
 
 
 
 
 
-	def __accelaration_overtime(self):
+	def __acceleration_overtime(self):
 		lower = 0 if self._boundings.value[0]<0 else self._boundings.value[0]
 		higher = len(self._data) if self._boundings.value[1]>(len(self._data)+1) else self._boundings.value[1]
 
 		self._progress.min = lower
 		self._progress.max = higher
 
-		accelarations = []
+		accelerations = []
 		for i in range(int(lower), int(higher)-2 ):
 			self._progress.value = i
 			if self._data[i]!=None:
@@ -219,9 +282,9 @@ class TrackingDensity(BaseWidget):
 				vel0 = lin_dist3d(pos1, pos0)
 				vel1 = lin_dist3d(pos2, pos1)
 
-				accelarations.append( (i, vel1-vel0) )
+				accelerations.append( (i, vel1-vel0) )
 		
-		self._graph.value = [accelarations]
+		self._graph.value = [accelerations]
 			
 	def __velocity_overtime(self):
 		lower = 0 if self._boundings.value[0]<0 else self._boundings.value[0]
@@ -250,7 +313,7 @@ class TrackingDensity(BaseWidget):
 				zs.append(i)
 				cs.append(lin_dist3d(pos1, pos0))
 
-		self._minVel.value = str( int(round(np.min( np.array(cs) )*1000)) )
+		self._minVel.value = str(int(round(np.min( np.array(cs) )*1000)) )
 		self._maxVel.value = str(int(round(np.max( np.array(cs) )*1000)))
 		self._velocityBnds.value = self._velocityBnds.min, self._velocityBnds.max
 		
@@ -290,6 +353,8 @@ class TrackingDensity(BaseWidget):
 				positions.append( (x,y,i) )
 		
 		self._graph.value = [positions]
+
+		
 
 	def __calculateMap(self):
 
