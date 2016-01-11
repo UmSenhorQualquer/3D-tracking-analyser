@@ -1,0 +1,19 @@
+#_minVar, #_maxVar {
+	max-width: 180px;	
+}
+
+#_sphere{
+	max-width: 320px;
+}
+
+#_colorMap{
+	max-width: 100px;
+}
+
+#_calcButton{
+	min-width: 200px;
+}
+
+#_mapVarsList{
+	max-width: 150px;
+}
