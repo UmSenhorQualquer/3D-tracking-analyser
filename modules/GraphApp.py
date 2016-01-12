@@ -22,20 +22,16 @@ class GraphApp(BaseApp):
 		self._varsList += ('Z',False)
 		self._varsList += ('Velocity',False)
 		self._varsList += ('Acceleration',False)
-		
-		self._formset = [
-			(' ','Frames bounding',' '),
-			'_boundings',
-			{
-				'b:Graphs': [ 
-					('_toggleVars',' '),
-					'_varsList',
-					'_loadGraph',
-					'_graph'],
-			},
-			'_progress'
-		]
 
+		self._modules_tabs.update({
+			'Graphs': [ 
+				('_toggleVars',' '),
+				'_varsList',
+				'_loadGraph',
+				'_graph'],
+		})
+		
+		
 		self._loadGraph.value 	= self.__calculate_graph
 		self._toggleVars.value = self.__show_hide_variables
 		self._varsList.hide()

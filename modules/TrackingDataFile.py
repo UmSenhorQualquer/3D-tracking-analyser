@@ -20,6 +20,7 @@ class TrackingDataFile:
 
 		self._separator 	= separator
 		if spamreader is not None: self.import_csv(spamreader)
+
 		
 
 	def import_csv(self, spamreader):		

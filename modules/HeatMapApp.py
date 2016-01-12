@@ -24,9 +24,13 @@ class HeatMapApp(BaseApp):
 		self._map   			= ControlVisVisVolume("Volume")
 		self._toggleSphere      = ControlButton('Filter by a region', 		checkable=True)
 		self._sphere 			= ControlText('Position filter (x,y,z,radius)')
+		self._scale 			= ControlText('Scale','10.0',helptext='Scale position values')
+
+
 
 		self._toggleMapVars    	= ControlButton('Select variables', 		checkable=True)
 		self._varsBnds			= ControlBoundingSlider('Variable bounds', 	horizontal = True)
+		self._higherValues 		= ControlCheckBox('Most higher', helptext='Show only the higher values')
 
 		self._colorMap 			= ControlCombo('Color map')
 		self._calcButton 		= ControlButton('Apply')
@@ -36,20 +40,16 @@ class HeatMapApp(BaseApp):
 
 		self._minVar 			= ControlText('Min vel.')
 		self._maxVar 			= ControlText('Max vel.')
-		
-		self._formset = [
-			(' ','Frames bounding',' '),
-			'_boundings',
-			{
-				'Heat map': [
-					('_colorMap','   |   ','Filters:','_toggleMapVars','_toggleSphere','_sphere','   |   ','_calcButton', ' '),
-					('_mapVarsList', '_minVar', '_varsBnds','_maxVar'),					
-					('_map','_colorsBnds')
-				]			
-			},
-			'_progress'
-		]
 
+		self._modules_tabs.update({
+			'Heat map': [
+					('_scale','_colorMap','   |   ','Filters:','_toggleMapVars','_toggleSphere','_sphere','   |   ','_calcButton', ' '),
+					('_mapVarsList', '_higherValues', '_minVar', '_varsBnds','_maxVar'),					
+					('_map','_colorsBnds')
+			]
+		})
+		
+		
 		self._mapVarsList += 'Velocity'
 		self._mapVarsList += 'Acceleration'		
 
@@ -74,6 +74,7 @@ class HeatMapApp(BaseApp):
 		self._mapVarsList.visible 	= False
 		self._minVar.visible 		= False
 		self._maxVar.visible 		= False
+		self._higherValues.visible  = False
 
 		self._varsBnds.convert_2_int   = False
 		self._colorsBnds.convert_2_int = False
@@ -99,9 +100,10 @@ class HeatMapApp(BaseApp):
 		self._varsBnds.visible 		= self._toggleMapVars.checked
 		self._minVar.visible 		= self._toggleMapVars.checked
 		self._maxVar.visible 		= self._toggleMapVars.checked
+		self._higherValues.visible  = self._toggleMapVars.checked
 
 	def __refreshColorsEvent(self):
-		if not self._mapImg.any(): return
+		if self._mapImg is None or not self._mapImg.any(): return
 
 		color_min, color_max = self._colorsBnds.value
 
@@ -138,9 +140,10 @@ class HeatMapApp(BaseApp):
 		
 
 	def __calculateMap(self):
-
+		#Filter for the data from a lower and upper frame
 		lower 	= 0 if self._boundings.value[0]<0 else self._boundings.value[0]
 		higher 	= len(self._data) if self._boundings.value[1]>(len(self._data)+1) else self._boundings.value[1]
+
 
 		self._progress.min = lower
 		self._progress.max = higher
@@ -177,12 +180,15 @@ class HeatMapApp(BaseApp):
 				if self._toggleMapVars.checked:
 					var  = self._velocities[i] if which_var==0 else self._accelerations[i]
 					if not(min_var<=var<=max_var): continue
-					img[x-2:x+2,y-2:y+2,z-2:z+2] += var
+
+					if self._higherValues.value:
+						tmp = img[x-2:x+2,y-2:y+2,z-2:z+2]
+						tmp[tmp<var] = var
+					else:
+						img[x-2:x+2,y-2:y+2,z-2:z+2] += var
 				else:
 					img[x-2:x+2,y-2:y+2,z-2:z+2] += 1.0
 		
-		self._map.value = img
-		self._mapImg 	= img
 
 		color_min = np.min(img)
 		color_max = np.max(img)
@@ -190,6 +196,13 @@ class HeatMapApp(BaseApp):
 		self._colorsBnds.max = color_max + (color_max-color_min)*0.1
 		self._colorsBnds.value = color_min, color_max
 
+		self._mapImg 	= None
+		self._map.value = np.zeros((1,1), dtype=np.float32)
+		
+		self._map.value = img
+		self._mapImg 	= img
+
+		
 	def __update_variables_bounds(self):
 		
 		if self._mapVarsList.value=='Velocity' and self._velocities:
@@ -209,8 +222,8 @@ class HeatMapApp(BaseApp):
 			self._maxVar.value = str(max_val)
 
 		if self._mapVarsList.value=='Acceleration' and self._accelerations:
-			lower 	= 0 if self._boundings.value[0]<0 else self._boundings.value[0]
-			higher 	= len(self._accelerations) if self._boundings.value[1]>(len(self._accelerations)+1) else self._boundings.value[1]
+			lower 	= int(0 if self._boundings.value[0]<0 else self._boundings.value[0])
+			higher 	= int(len(self._accelerations) if self._boundings.value[1]>(len(self._accelerations)+1) else self._boundings.value[1])
 
 			max_val = max(self._accelerations[lower:higher-1])
 			min_val = min(self._accelerations[lower:higher-1])
@@ -226,6 +239,59 @@ class HeatMapApp(BaseApp):
 	def load_tracking_file(self):
 		super(HeatMapApp,self).load_tracking_file()
 		self.__update_variables_bounds()
+
+
+
+	def export_tracking_file(self):
+
+		filename = QtGui.QFileDialog.getSaveFileName(self, 'Select a file', selectedFilter='*.csv')
+		if not filename: return
+		filename = str(filename)
+		if not filename.lower().endswith('.csv'): filename += '.csv'
+
+		#Export only the selected bounds
+		lower  = 0 if self._boundings.value[0]<0 else self._boundings.value[0]
+		higher = len(self._data) if self._boundings.value[1]>(len(self._data)+1) else self._boundings.value[1]
+
+		self._progress.min = lower
+		self._progress.max = higher
+
+		which_var = 0 if self._mapVarsList.value=='Velocity' else 1
+		try:
+			sphere = sphere_x, sphere_y, sphere_z, sphere_r = eval(self._sphere.value)
+		except:
+			sphere = None
+
+		min_var, max_var = self._varsBnds.value
+
+
+		with open(filename, 'wb') as csvfile:
+			spamwriter = csv.writer(csvfile, delimiter=',')
+	
+			for i in range(int(lower), int(higher) ):
+				self._progress.value = i
+
+				position = self._data[i].position
+				x, y, z  = position
+				x += abs(self._data.xRange[0])
+				y += abs(self._data.yRange[0])
+				z += abs(self._data.zRange[0])
+				x = int(round(x*self.SCALE))
+				y = int(round(y*self.SCALE))
+				z = int(round(z*self.SCALE))
+
+				if sphere!=None and lin_dist3d( (x,y,z), (sphere_x, sphere_y, sphere_z) )>sphere_r: continue
+				
+				if self._toggleMapVars.checked:
+					var  = self._velocities[i] if which_var==0 else self._accelerations[i]
+					if not(min_var<=var<=max_var): continue
+				
+				if self._data[i]==None: continue
+
+				row2save = self._data[i].row
+				if i>lower: 	row2save = row2save + [self._velocities[i]   ]
+				if (i+1)>lower: row2save = row2save + [self._accelerations[i]]
+				spamwriter.writerow(row2save)
 
 	
 
