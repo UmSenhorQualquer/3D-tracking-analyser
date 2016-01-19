@@ -20,5 +20,7 @@ from pyforms.Controls import ControlBoundingSlider
 from pyforms.Controls import ControlCheckBoxList
 from pyforms.Controls import ControlDockWidget
 from pyforms.Controls import ControlOpenGL
+from pyforms.Controls import ControlEmptyWidget
 from pyforms import BaseWidget
 import pyforms as app
+

@@ -87,7 +87,7 @@ class BaseApp(BaseWidget):
 					if lastVelocity!=None:  self._accelerations.append( velocity-lastVelocity )
 					lastVelocity = velocity
 
-				self._progress.value = i
+				if (i % 3000)==0: self._progress.value = i
 
 			self._progress.value = len(self._data)
 

@@ -21,9 +21,18 @@
 #_scale{
 	max-width: 85px;
 }
+
 #_higherValues{
 	max-width: 120px;
 }
 #_mapvars{
 	max-width: 120px;
+}
+
+#_scene_objects{
+	max-height: 140px;
+}
+
+#_gl_scene QGLWidget{
+	height: 1000px;
 }
