@@ -14,7 +14,7 @@ class CustomScene(GLScene):
 		self.points = []
 		self.colors = []
 		self._center = 0,0,0
-
+		self.points_size = 1.0
 
 
 	def DrawGLScene(self):
@@ -29,7 +29,7 @@ class CustomScene(GLScene):
 		glHint( GL_POLYGON_SMOOTH_HINT, GL_NICEST );		
 
 		if len(self.points)>0:
-			glPointSize(3)
+			glPointSize(self.points_size)
 			glEnableClientState(GL_COLOR_ARRAY)
 			glEnableClientState(GL_VERTEX_ARRAY)
 			glColorPointer(4, GL_FLOAT, 0, np.array(self.colors) );

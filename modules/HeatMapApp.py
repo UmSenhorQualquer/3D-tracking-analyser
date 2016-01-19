@@ -4,7 +4,6 @@ from PyQt4 import QtGui
 from BaseApp import BaseApp
 import numpy as np, math, csv, os, cv2, visvis as vv, decimal
 
-
 def lin_dist3d(p0, p1):   return math.sqrt((p0[0] - p1[0])**2 + (p0[1] - p1[1])**2 + (p0[2] - p1[2])**2)
 
 
@@ -15,78 +14,75 @@ class HeatMapApp(BaseApp):
 	def __init__(self, title='Heat map'):
 		super(HeatMapApp, self).__init__(title)
 
-		self._mapImg = None
-		self._velocities    = None
-		self._accelerations = None
+		self._heatmapImg 	= None #Store a numpy array with the heatmap
+		self._velocities    = None #Store the velocities for each frame
+		self._accelerations = None #Store the accelarations for each frame
 
+		##### CONTROLS ##############################################################################
+		self._heatmap   				= ControlVisVisVolume("Volume")
+		self._toggleSphereVisibility 	= ControlButton('Filter by a region', checkable=True)
+		self._sphere 					= ControlText('Position filter (x,y,z,radius)')
 
-		self._map   			= ControlVisVisVolume("Volume")
-		self._toggleSphere      = ControlButton('Filter by a region', 		checkable=True)
-		self._sphere 			= ControlText('Position filter (x,y,z,radius)')
-		
+		self._toggleHeatmapVars    		= ControlButton('Select variables', checkable=True)
+		self._heatmapVarsBnds			= ControlBoundingSlider('Variable bounds', horizontal=True)
+		self._heatmapHigherVarsValues 	= ControlCheckBox('Most higher', helptext='Show only the higher values')
 
+		self._heatmapColor 				= ControlCombo('Color map')
+		self._apply2Heatmap 			= ControlButton('Apply to map')
 
-		self._toggleMapVars    	= ControlButton('Select variables', 		checkable=True)
-		self._varsBnds			= ControlBoundingSlider('Variable bounds', 	horizontal = True)
-		self._higherValues 		= ControlCheckBox('Most higher', helptext='Show only the higher values')
+		self._heatmapColorsBnds			= ControlBoundingSlider('Colors', horizontal=False)
+		self._heatmapVarsList			= ControlCombo('Variables')
+		self._heatmapVars				= ControlCheckBox('Map variables')
 
-		self._colorMap 			= ControlCombo('Color map')
-		self._calcButton 		= ControlButton('Apply')
+		self._heatMapMinVar				= ControlText('Min vel.')
+		self._heatMapMaxVar				= ControlText('Max vel.')
 
-		self._colorsBnds		= ControlBoundingSlider('Colors', horizontal = False)
-		self._mapVarsList		= ControlCombo('Variables')
-		self._mapvars			= ControlCheckBox('Map variables')
-
-		self._minVar 			= ControlText('Min vel.')
-		self._maxVar 			= ControlText('Max vel.')
-
+		#############################################################################################
 		self._modules_tabs.update({
 			'Heat map': [
-					('_colorMap','   |   ','Filters:','_toggleMapVars','_toggleSphere','_sphere','   |   ','_calcButton', ' '),
-					('_mapVarsList','_mapvars','_higherValues', '_minVar', '_varsBnds','_maxVar'),					
-					{'Map':('_map','_colorsBnds')}
+				('_heatmapColor','   |   ','Filters:','_toggleHeatmapVars','_toggleSphereVisibility', '_sphere','   |   ','_apply2Heatmap', ' '),
+				('_heatmapVarsList','_heatmapVars','_heatmapHigherVarsValues', '_heatMapMinVar', '_heatmapVarsBnds','_heatMapMaxVar'),					
+				{'Map':('_heatmap','_heatmapColorsBnds')}
 			]
 		})
+		#############################################################################################
 		
+		self._heatmapVarsList += 'Velocity'
+		self._heatmapVarsList += 'Acceleration'		
+
+		self._heatmapColor.addItem( 'Bone', 	vv.CM_BONE )
+		self._heatmapColor.addItem( 'Cool', 	vv.CM_COOL )
+		self._heatmapColor.addItem( 'Copper', 	vv.CM_COPPER )
+		self._heatmapColor.addItem( 'Gray', 	vv.CM_GRAY )
+		self._heatmapColor.addItem( 'Hot', 		vv.CM_HOT )
+		self._heatmapColor.addItem( 'HSV', 		vv.CM_HSV )
+		self._heatmapColor.addItem( 'Jet', 		vv.CM_JET )
+		self._heatmapColor.addItem( 'Pink', 	vv.CM_PINK )
+		self._heatmapColor.addItem( 'Autumn', 	vv.CM_AUTUMN )
+		self._heatmapColor.addItem( 'Spring', 	vv.CM_SPRING )
+		self._heatmapColor.addItem( 'Summer', 	vv.CM_SUMMER )
+		self._heatmapColor.addItem( 'Winter', 	vv.CM_WINTER )
+		self._heatmapColor.value = vv.CM_HSV		
+
+		self._sphere.visible 					= False
+		self._heatmapVarsBnds.visible 			= False
+		self._heatmapVarsList.visible 			= False
+		self._heatMapMinVar.visible 			= False
+		self._heatMapMaxVar.visible 			= False
+		self._heatmapVars.visible  				= False
+		self._heatmapHigherVarsValues.visible  	= False
+		self._heatmapVarsBnds.convert_2_int   	= False
+		self._heatmapColorsBnds.convert_2_int 	= False
 		
-		self._mapVarsList += 'Velocity'
-		self._mapVarsList += 'Acceleration'		
-
-		self._colorMap.addItem( 'Bone', 	vv.CM_BONE )
-		self._colorMap.addItem( 'Cool', 	vv.CM_COOL )
-		self._colorMap.addItem( 'Copper', 	vv.CM_COPPER )
-		self._colorMap.addItem( 'Gray', 	vv.CM_GRAY )
-		self._colorMap.addItem( 'Hot', 		vv.CM_HOT )
-		self._colorMap.addItem( 'HSV', 		vv.CM_HSV )
-		self._colorMap.addItem( 'Jet', 		vv.CM_JET )
-		self._colorMap.addItem( 'Pink', 	vv.CM_PINK )
-		self._colorMap.addItem( 'Autumn', 	vv.CM_AUTUMN )
-		self._colorMap.addItem( 'Spring', 	vv.CM_SPRING )
-		self._colorMap.addItem( 'Summer', 	vv.CM_SUMMER )
-		self._colorMap.addItem( 'Winter', 	vv.CM_WINTER )
-
-		self._colorMap.changed   = self.updateColorMap
-		self._toggleSphere.value = self.__toggle_sphere
-		self._toggleMapVars.value   = self.__toggle_variables
-		self._sphere.visible 		= False
-		self._varsBnds.visible 		= False
-		self._mapVarsList.visible 	= False
-		self._minVar.visible 		= False
-		self._maxVar.visible 		= False
-		self._mapvars.visible  		= False
-		self._higherValues.visible  = False
-
-		self._varsBnds.convert_2_int   = False
-		self._colorsBnds.convert_2_int = False
-		
-
-		self._calcButton.value 		= self.calculateMap
-		self._mapVarsList.changed 	= self.__update_variables_bounds
-		self._minVar.changed 		= self.__minVarChanged
-		self._maxVar.changed 		= self.__maxVarChanged
-		self._colorMap.value 		= vv.CM_HSV
-		self._colorsBnds.changed	= self.refreshColorsEvent
-		self._mapvars.changed 		= self.__map_variables_changed
+		self._apply2Heatmap.value 			= self.calculate_heatmap_event
+		self._heatmapColor.changed   		= self.changed_heatmap_color_event
+		self._toggleSphereVisibility.value 	= self.__toggle_sphere_visiblity_event
+		self._toggleHeatmapVars.value   	= self.__toggle_variables_visibility_event
+		self._heatmapVarsList.changed 		= self.__changed_heatmap_variables_list_event
+		self._heatMapMinVar.changed 		= self.__changed_heatmap_minVar_event
+		self._heatMapMaxVar.changed 		= self.__changed_heatmap_maxVar_event
+		self._heatmapColorsBnds.changed		= self.changed_heatmap_colors_bounds_event
+		self._heatmapVars.changed 			= self.__changed_heatmap_variables_event
 
 		
 
@@ -94,23 +90,29 @@ class HeatMapApp(BaseApp):
 	### AUXILIAR FUNCTIONS #####################################################################
 	############################################################################################
 
-	def __calc_map_size(self, x_diff, y_diff, z_diff, scale=None):
-		if scale==None: scale = self.calc_scale(x_diff, y_diff, z_diff)
+	def __calc_heatmap_size(self, x_diff, y_diff, z_diff, scale=None):
+		"""
+		Calculate the heatmap size
+		"""
+		if scale==None: scale = self.fit_scale(x_size, y_size, z_size)
+		x_scaled_size = int( round( (x_diff+1)*scale) )
+		y_scaled_size = int( round( (y_diff+1)*scale) )
+		z_scaled_size = int( round( (z_diff+1)*scale) )
+		return x_scaled_size, y_scaled_size, z_scaled_size
 
-		x_size = int( round( (x_diff+1)*scale) )
-		y_size = int( round( (y_diff+1)*scale) )
-		z_size = int( round( (z_diff+1)*scale) )
-		return x_size, y_size, z_size
-
-	def calc_scale(self, x_diff, y_diff, z_diff):
+	def fit_scale(self, x_diff, y_diff, z_diff):
+		"""
+		Calculate the scale value that should be applied to each position, so they can fit in an numpy array
+		"""
 		scale 		= 1.0
 		new_scale 	= 1.0
 		x_size, y_size, z_size = 0,0,0
 		
+		#The maximum allowed size for the heatmap is (2000,2000,2000)
 		while x_size<=2000.0 and y_size<=2000.0 and z_size<=2000.0:
 			scale 		= new_scale
 			new_scale 	= scale * 10.0
-			x_size, y_size, z_size = self.__calc_map_size(x_diff, y_diff, z_diff, new_scale)
+			x_size, y_size, z_size = self.__calc_heatmap_size(x_diff, y_diff, z_diff, new_scale)
 		return scale
 
 
@@ -118,97 +120,87 @@ class HeatMapApp(BaseApp):
 	### EVENTS #################################################################################
 	############################################################################################
 
-	def __map_variables_changed(self):
-		self._higherValues.visible = self._mapvars.value
+	def __changed_heatmap_variables_event(self):
+		self._heatmapHigherVarsValues.visible = self._heatmapVars.value
 
-	def __toggle_sphere(self):
-		self._sphere.visible = self._toggleSphere.checked
+	def __toggle_sphere_visiblity_event(self):
+		self._sphere.visible = self._toggleSphereVisibility.checked
 
-	def __toggle_variables(self):
-		self._mapVarsList.visible 	= self._toggleMapVars.checked
-		self._varsBnds.visible 		= self._toggleMapVars.checked
-		self._minVar.visible 		= self._toggleMapVars.checked
-		self._maxVar.visible 		= self._toggleMapVars.checked
-		self._mapvars.visible  		= self._toggleMapVars.checked
+	def __toggle_variables_visibility_event(self):
+		self._heatmapVarsList.visible 	= self._toggleHeatmapVars.checked
+		self._heatmapVarsBnds.visible 	= self._toggleHeatmapVars.checked
+		self._heatMapMinVar.visible 	= self._toggleHeatmapVars.checked
+		self._heatMapMaxVar.visible 	= self._toggleHeatmapVars.checked
+		self._heatmapVars.visible  		= self._toggleHeatmapVars.checked
 		
 
-	def refreshColorsEvent(self):
-		if self._mapImg is None or not self._mapImg.any(): return
-		self._map.colors_limits = self._colorsBnds.value
+	def changed_heatmap_colors_bounds_event(self):
+		if self._heatmapImg is None or not self._heatmapImg.any(): return
+		self._heatmap.colors_limits = self._heatmapColorsBnds.value
 
-	def __minVarChanged(self):
-		if self._minVar.value=='': return
+	def __changed_heatmap_minVar_event(self):
+		if self._heatMapMinVar.value=='': return
 
-		v = eval(self._minVar.value)
-		self._varsBnds.min = v
-		values = list(self._varsBnds.value)
+		v = eval(self._heatMapMinVar.value)
+		self._heatmapVarsBnds.min = v
+		values = list(self._heatmapVarsBnds.value)
 
 		if values[0]<v: values[0] = v
-		self._varsBnds.value = values
+		self._heatmapVarsBnds.value = values
 
-	def __maxVarChanged(self):
-		if self._maxVar.value=='': return
+	def __changed_heatmap_maxVar_event(self):
+		if self._heatMapMaxVar.value=='': return
 
-		v = eval(self._maxVar.value)
-		self._varsBnds.max = v
-		values = list(self._varsBnds.value)
+		v = eval(self._heatMapMaxVar.value)
+		self._heatmapVarsBnds.max = v
+		values = list(self._heatmapVarsBnds.value)
 		
 		if values[1]>v: values[1] = v
-		self._varsBnds.value = values
+		self._heatmapVarsBnds.value = values
 
-	def updateColorMap(self):
-		self._map.colorMap = self._colorMap.value
-
-	def __update_variables_bounds(self):
+	def __changed_heatmap_variables_list_event(self):
 		
-		if self._mapVarsList.value=='Velocity' and self._velocities:
+		if self._heatmapVarsList.value=='Velocity' and self._velocities:
 			lower 	= int(0 if self._boundings.value[0]<0 else self._boundings.value[0])
 			higher 	= int(len(self._velocities) if self._boundings.value[1]>=len(self._velocities) else self._boundings.value[1])
-			max_val = max(self._velocities[lower:higher-1])
-			min_val = min(self._velocities[lower:higher-1])
-			self._varsBnds.value = min_val, max_val			
-			diff 	= (max_val-min_val)
-			max_val = max_val + diff*0.1
-			min_val = min_val - diff*0.1
-			self._minVar.value = str(min_val)
-			self._maxVar.value = str(max_val)
+			max_val = max(self._velocities[lower:higher])
+			min_val = min(self._velocities[lower:higher])
+			self._heatmapVarsBnds.value = round(min_val, 2), round(max_val, 2)
+			self._heatMapMinVar.value = str(round(min_val - (max_val-min_val)*0.1, 2))
+			self._heatMapMaxVar.value = str(round(max_val + (max_val-min_val)*0.1, 2))
 
-		if self._mapVarsList.value=='Acceleration' and self._accelerations:
+		if self._heatmapVarsList.value=='Acceleration' and self._accelerations:
 			lower 	= int(0 if self._boundings.value[0]<0 else self._boundings.value[0])
 			higher 	= int(len(self._accelerations) if self._boundings.value[1]>(len(self._accelerations)+1) else self._boundings.value[1])
-			max_val = max(self._accelerations[lower:higher-1])
-			min_val = min(self._accelerations[lower:higher-1])
-			self._varsBnds.value = min_val, max_val			
-			diff 	= (max_val-min_val)
-			max_val = max_val + diff*0.1
-			min_val = min_val - diff*0.1
-			self._minVar.value = str(min_val)
-			self._maxVar.value = str(max_val)
+			max_val = max(self._accelerations[lower:higher])
+			min_val = min(self._accelerations[lower:higher])
+			self._heatmapVarsBnds.value = round(min_val, 2), round(max_val, 2)
+			self._heatMapMinVar.value   = str(round(min_val - (max_val-min_val)*0.1, 2))
+			self._heatMapMaxVar.value   = str(round(max_val + (max_val-min_val)*0.1, 2))
 
 
+	def changed_heatmap_color_event(self): self._heatmap.colorMap = self._heatmapColor.value
 
 	############################################################################################
 	### Map generation #########################################################################
 	############################################################################################
 
-	def calculateMap(self):
+	def calculate_heatmap_event(self):
 		#Filter for the data from a lower and upper frame
 		self._progress.min = lower 	= 0 if self._boundings.value[0]<0 else int(self._boundings.value[0])
 		self._progress.max = higher = len(self._data) if self._boundings.value[1]>(len(self._data)+1) else int(self._boundings.value[1])
-
-		
 
 		#Calculate the size of the map
 		x_diff = self._data.xRange[1]-self._data.xRange[0]
 		y_diff = self._data.yRange[1]-self._data.yRange[0]
 		z_diff = self._data.zRange[1]-self._data.zRange[0]
-		scale  = self.calc_scale(x_diff, y_diff, z_diff) #Fit the best scale value
-		x_size, y_size, z_size = self.__calc_map_size(x_diff, y_diff, z_diff, scale) #Return the best size for the map image
+		scale  = self.fit_scale(x_diff, y_diff, z_diff) #Fit the best scale value
+		x_size, y_size, z_size = self.__calc_heatmap_size(x_diff, y_diff, z_diff, scale) #Return the best size for the map image
 		
 		try: 	sphere = sphere_x, sphere_y, sphere_z, sphere_r = eval(self._sphere.value)
 		except: sphere = None
-		min_var, max_var = self._varsBnds.value
-		which_var = 0 if self._mapVarsList.value=='Velocity' else 1
+		min_var, max_var = self._heatmapVarsBnds.value
+		which_var = 0 if self._heatmapVarsList.value=='Velocity' else 1
 		
 		#Create the map image
 		img = np.zeros( (z_size,x_size,y_size), dtype=np.float32)
@@ -232,7 +224,7 @@ class HeatMapApp(BaseApp):
 				if sphere!=None and lin_dist3d( (x,y,z), (sphere_x, sphere_y, sphere_z) )>sphere_r: continue
 				
 				#Use variables to construct the map, or positions
-				if self._toggleMapVars.checked:
+				if self._toggleHeatmapVars.checked:
 					#velocities array has less 1 element than positions array
 					if which_var==0 and len(self._velocities)<=i: continue
 					#accelarations array has less 2 element than positions array
@@ -243,13 +235,13 @@ class HeatMapApp(BaseApp):
 					#Filter by variable boundaries
 					if not(min_var<=var<=max_var): continue
 
-					if self._mapvars.value:
+					if self._heatmapVars.value:
 						#Map the variables
-						if self._higherValues.value:
-							tmp = img[x-1:x+1,y-1:y+1,z-1:z+1]
+						if self._heatmapHigherVarsValues.value:
+							tmp = img[z-1:z+1,x-1:x+1,y-1:y+1]
 							tmp[tmp<var] = var
 						else:
-							img[x-1:x+1,y-1:y+1,z-1:z+1] += var
+							img[z-1:z+1,x-1:x+1,y-1:y+1] += var
 					else:
 						#Map positions
 						img[z-1:z+1,x-1:x+1,y-1:y+1] += 1.0
@@ -257,21 +249,18 @@ class HeatMapApp(BaseApp):
 					#Map positions
 					img[z-1:z+1,x-1:x+1,y-1:y+1] += 1.0
 
-		self._map.colors_limits = None
 		self._progress.value = higher
 
 		color_min = np.min(img)
 		color_max = np.max(img)
-		self._colorsBnds.min = color_min - (color_max-color_min)*0.1
-		self._colorsBnds.max = color_max + (color_max-color_min)*0.1
-		self._colorsBnds.value = color_min, color_max
+		self._heatmapColorsBnds.min = color_min - (color_max-color_min)*0.1
+		self._heatmapColorsBnds.max = color_max + (color_max-color_min)*0.1
+		self._heatmapColorsBnds.value = color_min, color_max
 
-		self._mapImg 	= None
-		self._map.value = np.zeros((1,1), dtype=np.float32)
-		
-		self._map.value = img
-		self._mapImg 	= img
-
+		self._heatmap.value 		= np.zeros((1,1), dtype=np.float32)
+		self._heatmap.colors_limits = None		
+		self._heatmap.value 		= img
+		self._heatmapImg 			= img
 
 
 	############################################################################################
@@ -280,11 +269,12 @@ class HeatMapApp(BaseApp):
 
 	def frames_boundings_changed(self):
 		super(HeatMapApp,self).frames_boundings_changed()
-		self.__update_variables_bounds()
+		self.__changed_heatmap_variables_list_event()
 
 	def load_tracking_file(self):
 		super(HeatMapApp,self).load_tracking_file()
-		self.__update_variables_bounds()
+		self.__changed_heatmap_variables_list_event()
+
 
 	def export_tracking_file(self):
 
@@ -300,19 +290,17 @@ class HeatMapApp(BaseApp):
 		self._progress.min = lower
 		self._progress.max = higher
 
-		which_var = 0 if self._mapVarsList.value=='Velocity' else 1
-		try:
-			sphere = sphere_x, sphere_y, sphere_z, sphere_r = eval(self._sphere.value)
-		except:
-			sphere = None
+		which_var = 0 if self._heatmapVarsList.value=='Velocity' else 1
+		try:    sphere = sphere_x, sphere_y, sphere_z, sphere_r = eval(self._sphere.value)
+		except: sphere = None
 
-		min_var, max_var = self._varsBnds.value
+		min_var, max_var = self._heatmapVarsBnds.value
 
 		#Calculate the size of the map
 		x_diff = self._data.xRange[1]-self._data.xRange[0]
 		y_diff = self._data.yRange[1]-self._data.yRange[0]
 		z_diff = self._data.zRange[1]-self._data.zRange[0]
-		scale  = self.calc_scale(x_diff, y_diff, z_diff) #Fit the best scale value
+		scale  = self.fit_scale(x_diff, y_diff, z_diff) #Fit the best scale value
 		
 		with open(filename, 'wb') as csvfile:
 			spamwriter = csv.writer(csvfile, delimiter=',')
@@ -331,7 +319,7 @@ class HeatMapApp(BaseApp):
 
 				if sphere!=None and lin_dist3d( (x,y,z), (sphere_x, sphere_y, sphere_z) )>sphere_r: continue
 				
-				if self._toggleMapVars.checked:
+				if self._toggleHeatmapVars.checked:
 					var  = self._velocities[i] if which_var==0 else self._accelerations[i]
 					if not(min_var<=var<=max_var): continue
 				

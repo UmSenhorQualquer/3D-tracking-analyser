@@ -7,7 +7,7 @@
 }
 
 #_colorMap{
-	max-width: 100px;
+	max-width: 170px;
 }
 
 #_calcButton{
@@ -35,4 +35,17 @@
 
 #_gl_scene QGLWidget{
 	height: 1000px;
+}
+
+#_bg_color{
+	max-width: 230px;
+}
+
+
+#_points_size{
+	max-width: 120px;
+}
+
+#_obj_color{
+	max-width: 500px;
 }

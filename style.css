@@ -1,4 +1,4 @@
-#_minVar, #_maxVar {
+#_heatMapMinVar, #_heatMapMaxVar {
 	max-width: 180px;	
 }
 
@@ -6,24 +6,43 @@
 	max-width: 320px;
 }
 
-#_colorMap{
-	max-width: 100px;
+#_heatmapColor{
+	max-width: 170px;
 }
 
 #_calcButton{
 	min-width: 200px;
 }
 
-#_mapVarsList{
+#_heatmapVarsList{
 	max-width: 150px;
 }
 
-#_scale{
-	max-width: 85px;
-}
-#_higherValues{
+
+#_heatmapHigherVarsValues{
 	max-width: 120px;
 }
-#_mapvars{
+#_heatmapVars{
 	max-width: 120px;
+}
+
+#_scene_objects{
+	max-height: 140px;
+}
+
+#_scene_opengl QGLWidget{
+	height: 1000px;
+}
+
+#_scene_bg_color{
+	max-width: 230px;
+}
+
+
+#_scene_points_size{
+	max-width: 120px;
+}
+
+#_scene_obj_color{
+	max-width: 500px;
 }

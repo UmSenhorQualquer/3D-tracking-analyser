@@ -1,4 +1,4 @@
-#_minVar, #_maxVar {
+#_heatMapMinVar, #_heatMapMaxVar {
 	max-width: 180px;	
 }
 
@@ -6,25 +6,28 @@
 	max-width: 320px;
 }
 
-#_colorMap{
-	max-width: 100px;
+#_heatmapColor{
+	max-width: 150px;
 }
 
 #_calcButton{
 	min-width: 200px;
 }
 
-#_mapVarsList{
-	max-width: 150px;
-}
+
 
 #_scale{
 	max-width: 85px;
 }
 
-#_higherValues{
+#_heatmapHigherVarsValues{
 	max-width: 120px;
 }
-#_mapvars{
+
+#_heatmapVarsList{
+	max-width: 200px;
+}
+
+#_heatmapVars{
 	max-width: 120px;
 }
