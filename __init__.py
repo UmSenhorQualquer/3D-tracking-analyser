@@ -1,5 +1,5 @@
 from pyforms import BaseWidget
-from pyforms.dialogs  import CsvParserDialog
+from pyforms.dialogs import CsvParserDialog
 from pyforms.Controls import ControlText
 from pyforms.Controls import ControlProgress
 from pyforms.Controls import ControlSlider

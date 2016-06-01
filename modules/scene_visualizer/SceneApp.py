@@ -91,8 +91,8 @@ class SceneApp(HeatMapApp):
 
 	def initForm(self):
 		super(SceneApp, self).initForm()
-		self._splitters[0].setStretchFactor(0,10)
-		self._splitters[0].setStretchFactor(1,90)
+		#self._splitters[0].setStretchFactor(0,10)
+		#self._splitters[0].setStretchFactor(1,90)
 
 	############################################################################################
 	### EVENTS #################################################################################
