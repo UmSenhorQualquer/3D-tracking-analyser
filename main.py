@@ -1,5 +1,5 @@
 #! /usr/bin/python
-from __init__ import *
+import pyforms
 from modules.GraphApp import GraphApp
 from modules.scene_visualizer.SceneApp import SceneApp
 
@@ -10,4 +10,4 @@ class Main(GraphApp, SceneApp):
 		GraphApp.__init__(self,'Density')
 		
 
-if __name__ == "__main__":  app.startApp(Main)
+if __name__ == "__main__":  pyforms.start_app(Main)

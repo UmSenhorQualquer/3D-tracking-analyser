@@ -1,6 +1,6 @@
 import csv, cv2, math, numpy as np
 from scipy.interpolate import interp1d
-from TrackingRow import TrackingRow
+from modules.TrackingRow import TrackingRow
 
 
 class TrackingDataFile:

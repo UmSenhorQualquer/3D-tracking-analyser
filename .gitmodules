@@ -1,0 +1,12 @@
+[submodule "lib-pyforms"]
+	path = lib-pyforms
+	url = https://github.com/UmSenhorQualquer/pyforms.git
+[submodule "lib-pysettings"]
+	path = lib-pysettings
+	url = https://github.com/UmSenhorQualquer/pysettings.git
+[submodule "lib-logging-bootstrap"]
+	path = lib-logging-bootstrap
+	url = https://UmSenhorQualquer@bitbucket.org/fchampalimaud/logging-bootstrap.git
+[submodule "lib-py3dengine"]
+	path = lib-py3dengine
+	url = https://github.com/UmSenhorQualquer/py3dengine.git

@@ -1,8 +1,15 @@
 #! /usr/bin/python
-from __init__ import *
-from TrackingDataFile 	 import TrackingDataFile
-from PyQt4 import QtGui
+import pyforms
+from pyforms import BaseWidget
+from pyforms.dialogs  import CsvParserDialog
+from pyforms.controls import ControlBoundingSlider
+from pyforms.controls import ControlProgress
+
+from modules.TrackingDataFile 	 import TrackingDataFile
+from AnyQt.QtWidgets import QFileDialog
 import numpy as np, math, csv, os, cv2, visvis as vv
+
+
 
 def lin_dist3d(p0, p1):   return math.sqrt((p0[0] - p1[0])**2 + (p0[1] - p1[1])**2 + (p0[2] - p1[2])**2)
 
@@ -19,7 +26,7 @@ class BaseApp(BaseWidget):
 		if not hasattr(self,'_modules_tabs'): self._modules_tabs = {}
 
 
-		self._formset 	= [(' ','Frames bounding',' '),'_boundings',self._modules_tabs,'_progress']
+		self.formset 	= [(' ','Frames bounding',' '),'_boundings',self._modules_tabs,'_progress']
 
 		#Controls organization definition		
 		self.mainmenu = [
@@ -37,7 +44,7 @@ class BaseApp(BaseWidget):
 
 		#Events definition
 		self._csvParser = CsvParserDialog()
-		self._csvParser.loadFileEvent = self.load_tracking_file
+		self._csvParser.load_file_event = self.load_tracking_file
 		self._boundings.changed = self.frames_boundings_changed
 
 
@@ -55,10 +62,10 @@ class BaseApp(BaseWidget):
 		if self._csvParser.filename!=None:
 			
 			separator 	= self._csvParser.separator
-			frame 	  	= self._csvParser.frameColumn
-			x     		= self._csvParser.xColumn
-			y     		= self._csvParser.yColumn
-			z     		= self._csvParser.zColumn
+			frame 	  	= int(self._csvParser.frameColumn)
+			x     		= int(self._csvParser.xColumn)
+			y     		= int(self._csvParser.yColumn)
+			z     		= int(self._csvParser.zColumn)
 
 			#Load the file to memory
 			self._data = TrackingDataFile(self._csvParser, separator, frame, x, y, z); self._csvParser.close()
@@ -94,7 +101,7 @@ class BaseApp(BaseWidget):
 
 	def export_tracking_file(self):
 
-		filename = QtGui.QFileDialog.getSaveFileName(self, 'Select a file', selectedFilter='*.csv')
+		filename, _ = QFileDialog.getSaveFileName(self, 'Select a file', selectedFilter='*.csv')
 		if not filename: return
 		filename = str(filename)
 

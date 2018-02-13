@@ -5,17 +5,18 @@ from modules.HeatMapApp import HeatMapApp, lin_dist3d
 from matplotlib import cm
 import numpy as np, visvis as vv
 
-try:
-	from py3DEngine.utils.WavefrontOBJFormat.WavefrontOBJReader import WavefrontOBJReader
-	from py3DEngine.bin.RunScene import RunScene
-	from CustomScene import CustomScene
-	py3DEngine_loaded = True
-except:
-	py3DEngine_loaded = False
+from pyforms.controls import ControlFile
+from pyforms.controls import ControlButton
+from pyforms.controls import ControlCheckBoxList
+from pyforms.controls import ControlOpenGL
+from pyforms.controls import ControlSlider
+from pyforms.controls import ControlCombo
+from pyforms.controls import ControlText
 
-
-
-
+from py3dengine.utils.WavefrontOBJFormat.WavefrontOBJReader import WavefrontOBJReader
+from py3dengine.bin.RunScene import RunScene
+from modules.scene_visualizer.CustomScene import CustomScene
+	
 
 
 class SceneApp(HeatMapApp):
@@ -25,8 +26,6 @@ class SceneApp(HeatMapApp):
 
 		super(SceneApp, self).__init__(title)
 
-		#this module is loaded only if the py3DEngine exists in the system
-		if not py3DEngine_loaded: return
 		
 		##### CONTROLS ##############################################################################
 		self._scene_file 	  		 = ControlFile('Scene')
@@ -70,8 +69,8 @@ class SceneApp(HeatMapApp):
 		self._scene_points_size += '6'
 		self._scene_points_size += '8'
 
-		self._scene_objs_list.visible 	= False
-		self._scene_obj_color.visible 	= False
+		self._scene_objs_list.hide()
+		self._scene_obj_color.hide()
 
 		self._scene_objs_list.changed 			= self.__changed_objects_list_event
 		self._scene_toggle_objs_list.value  	= self.__toggle_objects_list_event
@@ -86,7 +85,8 @@ class SceneApp(HeatMapApp):
 		self._scene_file.changed 			= self.__scene_file_selected
 
 		self._scene_opengl.clear_color 			= 1,1,1,1
-		self._scene_file.value 		= '/home/ricardo/Desktop/01Apollo201403210900/01Apollo201403210900_Scenario.obj'
+
+		#self._scene_file.value 		= '/home/ricardo/Desktop/01Apollo201403210900/01Apollo201403210900_Scenario.obj'
 
 
 	def initForm(self):
@@ -113,9 +113,13 @@ class SceneApp(HeatMapApp):
 		self._scene_opengl.repaint()
 
 	def __toggle_objects_list_event(self):
-		self._scene_objs_list.visible = self._scene_toggle_objs_list.checked
-		self._scene_obj_color.visible 	= self._scene_toggle_objs_list.checked
-
+		if self._scene_toggle_objs_list.checked:
+			self._scene_objs_list.show()
+			self._scene_obj_color.show()
+		else:
+			self._scene_objs_list.hide()
+			self._scene_obj_color.hide()
+			
 	def __changed_background_color_event(self):
 		self._scene_opengl.clear_color 	= eval(self._scene_bg_color.value)
 

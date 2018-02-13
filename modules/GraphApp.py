@@ -1,9 +1,11 @@
 #! /usr/bin/python
 from __init__ import *
-from PyQt4 import QtGui
-from BaseApp import BaseApp
+from modules.BaseApp import BaseApp
 import numpy as np, math, csv, os, cv2, visvis as vv
 
+from pyforms.controls import ControlVisVis
+from pyforms.controls import ControlButton
+from pyforms.controls import ControlCheckBoxList
 
 class GraphApp(BaseApp):
 	"""Application form"""
@@ -39,13 +41,18 @@ class GraphApp(BaseApp):
 	
 	def __show_hide_variables(self):
 		#Show and hide the variables list
-		self._varsList.visible = self._toggleVars.checked
-		self._loadGraph.visible = self._toggleVars.checked
+		if self._toggleVars.checked:
+			self._varsList.show()
+			self._loadGraph.show()
+		else:
+			self._varsList.hide()
+			self._loadGraph.hide()
+			
 	
 	def __calculate_graph(self):
 		#Render the graph
 		if self._data==None:
-			QtGui.QMessageBox.warning(self, "The data is missing", "Please load the data first.")
+			self.warning("Please load the data first.", "The data is missing")
 			return
 
 		lower  = 0 if self._boundings.value[0]<0 else self._boundings.value[0]
@@ -58,7 +65,7 @@ class GraphApp(BaseApp):
 		variables = self._varsList.value
 
 		if len(variables)>3:
-			QtGui.QMessageBox.warning(self, "Too many variables selected", "Please select the maximum of 3 variables.")
+			self.warning("Please select the maximum of 3 variables.", "Too many variables selected")
 			return
 
 		for i in range(int(lower), int(higher)-2 ):

@@ -1,8 +1,14 @@
 #! /usr/bin/python
-from __init__ import *
-from PyQt4 import QtGui
-from BaseApp import BaseApp
+from AnyQt.QtWidgets import QFileDialog
+from modules.BaseApp import BaseApp
 import numpy as np, math, csv, os, cv2, visvis as vv, decimal
+
+from pyforms.controls import ControlButton
+from pyforms.controls import ControlText
+from pyforms.controls import ControlCombo
+from pyforms.controls import ControlBoundingSlider
+from pyforms.controls import ControlCheckBox
+from pyforms.controls import ControlVisVisVolume
 
 def lin_dist3d(p0, p1):   return math.sqrt((p0[0] - p1[0])**2 + (p0[1] - p1[1])**2 + (p0[2] - p1[2])**2)
 
@@ -50,27 +56,27 @@ class HeatMapApp(BaseApp):
 		self._heatmapVarsList += 'Velocity'
 		self._heatmapVarsList += 'Acceleration'		
 
-		self._heatmapColor.addItem( 'Bone', 	vv.CM_BONE )
-		self._heatmapColor.addItem( 'Cool', 	vv.CM_COOL )
-		self._heatmapColor.addItem( 'Copper', 	vv.CM_COPPER )
-		self._heatmapColor.addItem( 'Gray', 	vv.CM_GRAY )
-		self._heatmapColor.addItem( 'Hot', 		vv.CM_HOT )
-		self._heatmapColor.addItem( 'HSV', 		vv.CM_HSV )
-		self._heatmapColor.addItem( 'Jet', 		vv.CM_JET )
-		self._heatmapColor.addItem( 'Pink', 	vv.CM_PINK )
-		self._heatmapColor.addItem( 'Autumn', 	vv.CM_AUTUMN )
-		self._heatmapColor.addItem( 'Spring', 	vv.CM_SPRING )
-		self._heatmapColor.addItem( 'Summer', 	vv.CM_SUMMER )
-		self._heatmapColor.addItem( 'Winter', 	vv.CM_WINTER )
+		self._heatmapColor.add_item( 'Bone', 	vv.CM_BONE )
+		self._heatmapColor.add_item( 'Cool', 	vv.CM_COOL )
+		self._heatmapColor.add_item( 'Copper', 	vv.CM_COPPER )
+		self._heatmapColor.add_item( 'Gray', 	vv.CM_GRAY )
+		self._heatmapColor.add_item( 'Hot', 		vv.CM_HOT )
+		self._heatmapColor.add_item( 'HSV', 		vv.CM_HSV )
+		self._heatmapColor.add_item( 'Jet', 		vv.CM_JET )
+		self._heatmapColor.add_item( 'Pink', 	vv.CM_PINK )
+		self._heatmapColor.add_item( 'Autumn', 	vv.CM_AUTUMN )
+		self._heatmapColor.add_item( 'Spring', 	vv.CM_SPRING )
+		self._heatmapColor.add_item( 'Summer', 	vv.CM_SUMMER )
+		self._heatmapColor.add_item( 'Winter', 	vv.CM_WINTER )
 		self._heatmapColor.value = vv.CM_HSV		
 
-		self._sphere.visible 					= False
-		self._heatmapVarsBnds.visible 			= False
-		self._heatmapVarsList.visible 			= False
-		self._heatMapMinVar.visible 			= False
-		self._heatMapMaxVar.visible 			= False
-		self._heatmapVars.visible  				= False
-		self._heatmapHigherVarsValues.visible  	= False
+		self._sphere.hide()
+		self._heatmapVarsBnds.hide()
+		self._heatmapVarsList.hide()
+		self._heatMapMinVar.hide()
+		self._heatMapMaxVar.hide()
+		self._heatmapVars.hide()
+		self._heatmapHigherVarsValues.hide()
 		self._heatmapVarsBnds.convert_2_int   	= False
 		self._heatmapColorsBnds.convert_2_int 	= False
 		
@@ -121,17 +127,30 @@ class HeatMapApp(BaseApp):
 	############################################################################################
 
 	def __changed_heatmap_variables_event(self):
-		self._heatmapHigherVarsValues.visible = self._heatmapVars.value
+		if self._heatmapVars.value:
+			self._heatmapHigherVarsValues.show()
+		else:
+			self._heatmapHigherVarsValues.hide()
 
 	def __toggle_sphere_visiblity_event(self):
-		self._sphere.visible = self._toggleSphereVisibility.checked
+		if self._toggleSphereVisibility.checked:
+			self._sphere.show()
+		else:
+			self._sphere.hide()
 
 	def __toggle_variables_visibility_event(self):
-		self._heatmapVarsList.visible 	= self._toggleHeatmapVars.checked
-		self._heatmapVarsBnds.visible 	= self._toggleHeatmapVars.checked
-		self._heatMapMinVar.visible 	= self._toggleHeatmapVars.checked
-		self._heatMapMaxVar.visible 	= self._toggleHeatmapVars.checked
-		self._heatmapVars.visible  		= self._toggleHeatmapVars.checked
+		if self._toggleHeatmapVars.checked:
+			self._heatmapVarsList.show()
+			self._heatmapVarsBnds.show()
+			self._heatMapMinVar.show()
+			self._heatMapMaxVar.show()
+			self._heatmapVars.show()
+		else:
+			self._heatmapVarsList.hide()
+			self._heatmapVarsBnds.hide()
+			self._heatMapMinVar.hide()
+			self._heatMapMaxVar.hide()
+			self._heatmapVars.hide()
 		
 
 	def changed_heatmap_colors_bounds_event(self):
@@ -187,6 +206,8 @@ class HeatMapApp(BaseApp):
 
 	def calculate_heatmap_event(self):
 		#Filter for the data from a lower and upper frame
+		if self._data is None: return
+		
 		self._progress.min = lower 	= 0 if self._boundings.value[0]<0 else int(self._boundings.value[0])
 		self._progress.max = higher = len(self._data) if self._boundings.value[1]>(len(self._data)+1) else int(self._boundings.value[1])
 
@@ -278,7 +299,7 @@ class HeatMapApp(BaseApp):
 
 	def export_tracking_file(self):
 
-		filename = QtGui.QFileDialog.getSaveFileName(self, 'Select a file', selectedFilter='*.csv')
+		filename,_ = QFileDialog.getSaveFileName(self, 'Select a file', selectedFilter='*.csv')
 		if not filename: return
 		filename = str(filename)
 		if not filename.lower().endswith('.csv'): filename += '.csv'

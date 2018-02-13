@@ -1,11 +1,9 @@
-from py3DEngine.scenes.GLScene import GLScene
+from py3dengine.scenes.GLScene import GLScene
 import math, cv2, numpy as np
-try:
-	from OpenGL.GL import *
-	from OpenGL.GLUT import *
-	from OpenGL.GLU import *
-except:
-	print 'No OpenGL libs'
+
+from OpenGL.GL import *
+from OpenGL.GLUT import *
+from OpenGL.GLU import *
 
 
 class CustomScene(GLScene):
